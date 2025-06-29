@@ -338,7 +338,11 @@
         ;; Check if we have enough appraisals to finalize
         (if (>= (len updated-appraisals) (var-get oracle-consensus-threshold))
           (finalize-appraisal request-id)
-          (ok { status: "pending", appraisals: (len updated-appraisals) })
+          (ok { 
+            collection-id: collection-id,
+            token-id: (get token-id request),
+            value: u0
+          })
         )
       )
     )
@@ -456,19 +460,14 @@
 ;; Calculate rarity score for an NFT (simplified version)
 (define-private (calculate-rarity-score (collection-id (string-ascii 32)) (token-id uint))
   ;; In a real implementation, this would analyze trait distributions
-  ;; For this example, we'll return a fixed score between 30-85
+  ;; For this example, we'll return a pseudorandom score between 30-85 based on token-id
   (let (
-    (pseudorandom-source (sha256 (concat (unwrap-panic (to-consensus-buff? collection-id)) 
-                                        (unwrap-panic (to-consensus-buff? token-id)))))
-    (first-byte (unwrap-panic (element-at pseudorandom-source u0)))
+    ;; Use token-id as source of randomness
+    (base-score (mod token-id u55))
   )
-    (+ u30 (mod (buff-to-uint-be first-byte) u55))
+    ;; Return score between 30-85
+    (+ u30 base-score)
   )
-)
-
-;; Helper to convert single byte to uint
-(define-private (buff-to-uint-be (byte (buff 1)))
-  (unwrap-panic (get uint (as-max-len? byte u1)))
 )
 
 ;; Apply for a loan against an NFT
